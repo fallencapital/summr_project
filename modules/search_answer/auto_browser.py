@@ -1,26 +1,39 @@
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
+from pathlib import Path
 
 class AutoBrowser:
-    def wakeup(self):
-        results = []
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            query = input()
-            i = 0
+    @staticmethod
+    async def wakeup(search: str, output_file: str = "itog.txt"):
+        answers_dir = Path(__file__).parent.parent.parent.parent / "damn_answers1"
+        answers_dir.mkdir(exist_ok=True)
+        output_path = answers_dir / output_file
+        
+        async with async_playwright() as l:
+            browser = await l.chromium.launch(headless=False)
+            page = await browser.new_page()
+            await page.goto("https://duckduckgo.com/")
+            query = page.locator("input[name='q']")
+            await query.fill(search)
+            await query.press("Enter")
+            await page.wait_for_selector("article", timeout=5000)
+            results = await page.query_selector_all("article")
+            
+            with open(output_path, "w", encoding="utf-8") as file:
+                file.write(f"Результаты поиска по запросу: '{search}'\n")
+                file.write(f"Всего найдено результатов: {len(results)}\n")
+                file.write("=" * 60 + "\n\n")
+                
+                for i, answer in enumerate(results, 1):
+                    link_el = await answer.query_selector("a[data-testid='result-title-a']")
+                    
+                    if link_el:
+                        title = await link_el.text_content()
+                        url = await link_el.get_attribute("href")
+                        file.write(f"РЕЗУЛЬТАТ #{i}\n")
+                        file.write(f"┌{'─' * 50}\n")
+                        file.write(f"│ Заголовок: {title}\n")
+                        file.write(f"│ URL: {url}\n")
+                        file.write(f"└{'─' * 50}\n\n")
 
-            page.goto(f"https://duckduckgo.com/search?q={query}")
-            page.wait_for_selector("#search")
-
-            for answer in page.query_selector_all("g")[:7]:
-                try:
-                    title = answer.query_selector("h3").inner_text()
-                    url = answer.query_selector("a").get_attribute("href")
-                    results.append({"title": title, "url": url})
-                except:
-                    print("Не получилось вывести сайт", i)
-                    i += 1
-                    continue
-
-            browser.close
-        return results
+            await browser.close()
+            
