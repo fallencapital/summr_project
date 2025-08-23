@@ -5,7 +5,6 @@ current_file = Path(__file__).resolve()
 invincible = current_file.parent.parent.parent
 sys.path.insert(0, str(invincible))
 
-from core.kernel import Core
 from modules.system.hardware_monitor import HardwareMonitor
 from modules.system.proc_monitor import ProcessMonitor
 from modules.system.s_process_kill import SoftProcessKiller
@@ -13,10 +12,9 @@ from modules.system.h_process_kill import HardProcessKiller
 
 class SystemCommands:
     @staticmethod
-    def systemcommands():
+    def systemcommands(core):
         hmon = HardwareMonitor()
         pmon = ProcessMonitor()
-        core = Core()
         sprockill = SoftProcessKiller()
         hprockill = HardProcessKiller()
         
